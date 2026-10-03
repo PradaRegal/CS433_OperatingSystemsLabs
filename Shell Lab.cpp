@@ -149,6 +149,8 @@ void apply_redirection(const char *file, bool append, bool to_stdout,
     // TODO (steps 2 and 3 above): compute target (STDOUT_FILENO or
     // STDIN_FILENO), save it with *saved_fd = dup(target), swap with
     // dup2(fd, target), then close(fd).
+
+    // LINES OF CODE THAT WE ADDED TO NOTE BACK ON!!!!!
     int target;
     if (to_stdout) {
         target = STDOUT_FILENO;
@@ -158,6 +160,7 @@ void apply_redirection(const char *file, bool append, bool to_stdout,
     *saved_fd = dup(target);
     dup2(fd,target);
     close(fd);
+    /////
 }
 
 /**
@@ -170,9 +173,13 @@ void restore_redirection(int saved_in, int saved_out)
     //       STDIN_FILENO / STDOUT_FILENO, then close it.
     if (saved_in >= 0) {
         // Fill in
+        dup2(saved_in,STDIN_FILENO);
+        close(saved_in);
     }
     if (saved_out >= 0) {
         // Fill in
+        dup2(saved_out, STDOUT_FILENO);
+        close(saved_out);
     }
 }
 
@@ -187,6 +194,12 @@ void builtin_cd(char *args[])
     // - No argument: change to the home directory (getenv("HOME")).
     // - Otherwise: chdir(args[1]).
     // - On failure, print an error message.
+    const char *directory;
+    if(args[1] == NULL){
+        directory = getenv("HOME");
+    } else{
+        directory = args[1];
+    }
 }
 
 /**
@@ -195,6 +208,8 @@ void builtin_cd(char *args[])
 void builtin_pwd(void)
 {
     // TODO: use getcwd() and print the result.
+    char *cwd = getcwd(NULL, 0);
+    
 }
 
 /**
@@ -295,4 +310,3 @@ int main(int argc, char *argv[])
     }
     return 0;
 }
-
