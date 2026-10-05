@@ -225,9 +225,9 @@ void builtin_pwd(void)
 void builtin_echo(char *args[])
 {
     // TODO: print args[1..n] separated by single spaces, then a newline.
-    for (int i = 1l args[i] != NULL; i++) {
+    for (int i = 1; args[i] != NULL; i++) {
         if (i > 1) {
-            printf(" ")
+            printf(" ");
         }
         printf("%s", args[i]);
     }
@@ -349,7 +349,23 @@ int main(int argc, char *argv[])
                     builtin_cd(args);
                 } else if (strcmp(args[0], "pwd") == 0) {
                     builtin_pwd();
+                } else if (strcmp(args[0], "echo") == 0) {
+                    builtin_echo(args);
+                } else if (strcmp(args[0], "exit")== 0) {
+                    should_exit = true;
+                } else if (strcmp(args[0], "history") == 0) {
+                    builtin_history(history);
+                } else if (strcmp(args[0], "help")==0) {
+                    builtin_help();
                 }
+
+                fflush(stdout); // finished writing directed output
+                restore_redirection(saved_in,saved_out); // reconnects input/output to terminal
+
+                if(should_exit){
+                    break; // leaves shell loop if command was exit
+                }
+                continue; // returns to next prompt and prevents built ins from reaching external command section
 
         }
 
@@ -362,6 +378,11 @@ int main(int argc, char *argv[])
         //    - In the parent: if the line ended in '&', print
         //      "[<job#>] <pid>" (job# starts at 1) and keep reading
         //      commands. Otherwise wait for the child with waitpid().
+
+        
     }
     return 0;
+}
+
+
 }
