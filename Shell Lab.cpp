@@ -208,7 +208,14 @@ void builtin_cd(char *args[])
 void builtin_pwd(void)
 {
     // TODO: use getcwd() and print the result.
-    char *cwd = getcwd(NULL, 0);
+    char *cwd = getcwd(NULL, 0); // allocates enough mem for directory path
+
+    if (cwd != NULL) {
+        printf("%s\n", cwd);
+        free(cwd); // releases allocated memory
+    } else {
+        fprintf(stderr, "osh: pwd: %s\n", strerror(errno)); // prints error
+    }
     
 }
 
@@ -218,7 +225,15 @@ void builtin_pwd(void)
 void builtin_echo(char *args[])
 {
     // TODO: print args[1..n] separated by single spaces, then a newline.
+    for (int i = 1l args[i] != NULL; i++) {
+        if (i > 1) {
+            printf(" ")
+        }
+        printf("%s", args[i]);
+    }
+    printf("\n");
 }
+
 
 /**
  * @brief Print all previously entered command lines, numbered (built-in).
@@ -226,6 +241,9 @@ void builtin_echo(char *args[])
 void builtin_history(const vector<string> &history)
 {
     // TODO: print each stored line numbered from 1.
+    for (size_t i = 0; i < history.size(); i++) {
+        printf("%zu %s\n", i + 1, history[i].c_str());
+    }
 }
 
 /**
@@ -276,6 +294,11 @@ int main(int argc, char *argv[])
         if (command[0] != '\0' && command[0] != '\n') {
             // TODO: strip the trailing newline and carriage return, then push
             //      the line into history.
+            size_t len = strlen(command); // finds command length
+            while (len > 0 && (command[len -1] == '\n' || command[len -1]== 'r')) {
+                command[--len] = '\0'; // loop removes \n or \r
+            }
+            history.push_back(command); //adds cleaned command to history vector
         }
         
         // 2. Parse the line with parse_command(). If it returned 0
@@ -296,7 +319,39 @@ int main(int argc, char *argv[])
 
         bool is_builtin = false;
         // a. use strcmp() to check if args[0] is one of the built-ins
+        is_builtin = strcmp(args[0], "cd") == 0 ||
+                     strcmp(args[0], "pwd") == 0 ||
+                     strcmp(args[0], "echo") == 0 ||
+                     strcmp(args[0], "exit") == 0 ||
+                     strcmp(args[0], "history") == 0 ||
+                     strcmp(args[0], "help") == 0;
         // b. Branching structure for each built-in command
+        if (is_builtin) { // runs block only for the arguments above
+            int saved_in = -1;
+            int saved_out = -1;
+            bool redirection_ok = true; // tracks whether redirection has been successfully set up
+            if (redir_in != NULL) {
+                apply_redirection(redir_in, false, false, &saved_in);
+                if (saved_in < 0) {
+                    redirection_ok = false;
+                }
+            }
+            if (redirection_ok && redir_out != NULL) {
+                apply_redirection(redir_out, redir_append, true, &saved_out);
+                if (saved_out < 0) {
+                    redirection_ok = false;
+                }
+            }
+
+            bool should_exit = false;
+            if (redirection_ok) {
+                if (strcmp(args[0], "cd") == 0){
+                    builtin_cd(args);
+                } else if (strcmp(args[0], "pwd") == 0) {
+                    builtin_pwd();
+                }
+
+        }
 
         // 4. External commands run in a child process:
         //    - The parent calls fork().
