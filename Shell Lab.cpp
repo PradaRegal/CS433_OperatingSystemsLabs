@@ -200,6 +200,15 @@ void builtin_cd(char *args[])
     } else{
         directory = args[1];
     }
+
+    if(directory == NULL) {
+        fprintf(stderr, "osh: cd: HOME not set\n");
+        return;
+    }
+
+    if(chdir(directory)<0) {
+        fprintf(stderr, "osh: cd: %s: %s\n", directory, strerror(errno));
+    }
 }
 
 /**
@@ -378,8 +387,62 @@ int main(int argc, char *argv[])
         //    - In the parent: if the line ended in '&', print
         //      "[<job#>] <pid>" (job# starts at 1) and keep reading
         //      commands. Otherwise wait for the child with waitpid().
+        pid_t pid = fork();
 
+        // check if fork failed
+        if (pid < 0)
+        {
+            fprintf(stderr, "osh: fork: %s\n", strerror(errno));
+            continue;
+        }
+
+        if (pid == 0) {
+            // in child, redirect standard input if command uses < 
+            if (redir_in != NULL) {
+                int saved_in = -1;
+            int saved_in = -1;
+
+            apply_redirection(redir_in, false, false, &saved_in);
+            // end child if input file could not be opened
+            if (saved_in < 0){
+                _exit(1);
+                }
         
+            // child will not restore its original input
+            close (saved_in);
+            }
+
+            if (redir_out != NULL) { // redirects standard output for > or >>
+                int saved_out = -1;
+
+                apply_redirection(redir_out, redir_append, true, &saved_out);
+
+                // end child if failed
+                if (saved_out < 0 ){
+                    _exit(1);
+                }
+                close(saved_out); // will not restore its original output
+
+                //. replace child proceses w requested command
+                execvp(args[0], args);
+                fprintf(stderr, "osh: %s: command not found\n", args[0]); // returns when failed
+                _exit(127);
+            }
+        }
+
+        // parent process
+        if(background){
+            job_count++;
+            printf("[%d] %ld", job_count, (long)pid);
+            fflush(stdout);
+        } else {
+            waitpid(pid, NULL, 0);
+        }
+
+
+
+
+
     }
     return 0;
 }
