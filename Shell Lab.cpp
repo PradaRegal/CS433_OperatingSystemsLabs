@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
             // TODO: strip the trailing newline and carriage return, then push
             //      the line into history.
             size_t len = strlen(command); // finds command length
-            while (len > 0 && (command[len -1] == '\n' || command[len -1]== 'r')) {
+            while (len > 0 && (command[len -1] == '\n' || command[len -1]== '\r')) {
                 command[--len] = '\0'; // loop removes \n or \r
             }
             history.push_back(command); //adds cleaned command to history vector
@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
                 } else if (strcmp(args[0], "help")==0) {
                     builtin_help();
                 }
-
+            }
                 fflush(stdout); // finished writing directed output
                 restore_redirection(saved_in,saved_out); // reconnects input/output to terminal
 
@@ -400,7 +400,6 @@ int main(int argc, char *argv[])
             // in child, redirect standard input if command uses < 
             if (redir_in != NULL) {
                 int saved_in = -1;
-            int saved_in = -1;
 
             apply_redirection(redir_in, false, false, &saved_in);
             // end child if input file could not be opened
@@ -422,18 +421,18 @@ int main(int argc, char *argv[])
                     _exit(1);
                 }
                 close(saved_out); // will not restore its original output
-
+            }
                 //. replace child proceses w requested command
                 execvp(args[0], args);
                 fprintf(stderr, "osh: %s: command not found\n", args[0]); // returns when failed
                 _exit(127);
-            }
+            
         }
 
         // parent process
         if(background){
             job_count++;
-            printf("[%d] %ld", job_count, (long)pid);
+            printf("[%d] %ld\n", job_count, (long)pid);
             fflush(stdout);
         } else {
             waitpid(pid, NULL, 0);
@@ -448,4 +447,4 @@ int main(int argc, char *argv[])
 }
 
 
-}
+
